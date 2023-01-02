@@ -10,40 +10,77 @@ namespace Exam1Moment
 {
     internal class Program
     {
-        private static string _email;
-        private static string _password;
+        public static int TestsCount;
         public static void Main(string[] args)
         {
-            DoSomeXPathCommand();
-        }
-        
-        public static void DoSomeXPathCommand()
-        {
+            Console.WriteLine(@"Введите путь до папки пользователя бразура Chrome\n (путь выглядит примерно так: C:\Users\vasil\AppData\Local\Google\Chrome\User Data)");
+            //TODO: автоматизировать поиск директории браузера
+            var pathToBrowser = Console.ReadLine();
+            
             Console.WriteLine("Введите ссылку на тест:");
             var href = Console.ReadLine();
             
-            var pathToFile = AppDomain.CurrentDomain.BaseDirectory + '\\';
-            Console.WriteLine(pathToFile);
-            var browserOptions = new ChromeOptions(); 
-            browserOptions.AddArgument(@"user-data-dir=C:\Users\vasil\AppData\Local\Google\Chrome\User Data");
-            //TODO: автоматизировать поиск директории браузера
-            var driver = new ChromeDriver(pathToFile, browserOptions);
+            Console.WriteLine("Сколько тестов вы хотите решить?");
+            TestsCount = int.Parse(Console.ReadLine());
+            
+            var pathToFile = $"{AppDomain.CurrentDomain.BaseDirectory}\\";
+            var browserOptions = new ChromeOptions();
+            browserOptions.AddArgument($"user-data-dir={pathToBrowser}");
+            browserOptions.AddArgument("--log-level=3");
+            //browserOptions.AddArgument("window-size=1000,900");
 
-            driver.Navigate().GoToUrl(href);
-            driver.FindElement(
-                By.XPath("//*[@id=\"submitButton\"]")).Click();
-            while (true)
+            var driverService = ChromeDriverService.CreateDefaultService();
+            driverService.HideCommandPromptWindow = true;
+            
+            Console.WriteLine("Браузер открывается...");
+            var driver = new ChromeDriver(pathToFile, browserOptions);
+            DoNTests(driver, href);
+        }
+        
+        public static void DoNTests(ChromeDriver driver, string href)
+        {
+            try
+            {
+                OpenTest(driver, href);
+            }
+            catch
+            {
+                Console.WriteLine("Введена неверная ссылка");
+                return;
+            }
+            
+            for (var i = 0; i < TestsCount; i++)
             {
                 SolveTest(driver);
-                Thread.Sleep(400);
+                Thread.Sleep(2000);
                 driver.FindElement(By.XPath("//*[@class=\"float-right\"]")).Click();
                 Thread.Sleep(100);
-                driver.FindElement(By.XPath("//*[@class=\"btn btn-secondary\"]")).Click();
+                Console.WriteLine($"Тест {i+1} выполнен.\n\n");
+ 
             }
+            
+            Console.WriteLine($"Выполнено {TestsCount} тестов.\n Нажмите Enter, чтобы завершить программу");
+            Console.ReadLine();
         }
+
+
+        private static void OpenTest(ChromeDriver driver, string href)
+        {
+            driver.Navigate().GoToUrl(href);
+            // User.AutorizeUser();
+            Console.WriteLine("Введите email и пароль в браузере и нажмите здесь Enter");
+            Console.ReadLine();
+            // driver.FindElement(By.XPath("//*[@id=\"userNameInput\"]")).SendKeys(User.Email);
+            // driver.FindElement(By.XPath("//*[@id=\"passwordInput\"]")).SendKeys(User.Password);
+            driver.FindElement(
+                    By.XPath("//*[@id=\"submitButton\"]")).Click();
+        }
+        
 
         private static void SolveTest(ChromeDriver driver)
         {
+            driver.FindElement(By.XPath("//*[@class=\"btn btn-secondary\"]")).Click();
+            
             while (true)
             {
                 Thread.Sleep(2000);
@@ -52,23 +89,16 @@ namespace Exam1Moment
                 Thread.Sleep(100);
                 foreach (var item in questionCase)
                 {
-                    Console.WriteLine(item);
-                    try
-                    {
-                        item.Click();
-                        Thread.Sleep(100);
-                        var suggest = driver.FindElement(By.XPath("//*[@id=\"page-mod-quiz-attempt\"]/ul/li[1]"));
-                        suggest.Click();
-                        Thread.Sleep(100);
-                        var syncshareButton =
-                            suggest.FindElement(By.XPath("ul/li/span"));
-                        syncshareButton.Click();
-                        Thread.Sleep(100);
-                    }
-                    catch
-                    {
-                        Console.WriteLine("Syncshare тут не смог");
-                    }
+                    item.Click();
+                    Thread.Sleep(100);
+                    var suggest = driver.FindElement(By.XPath("//*[@id=\"page-mod-quiz-attempt\"]/ul/li[1]"));
+                    suggest.Click();
+                    Thread.Sleep(100);
+                    var syncshareButton =
+                        suggest.FindElement(By.XPath("ul/li/span"));
+                    syncshareButton.Click();
+                    Console.Write(".");
+                    Thread.Sleep(100);
                 }
 
                 Thread.Sleep(100);
